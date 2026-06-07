@@ -11,6 +11,7 @@ dotenv.config({
 })
 
 
+
 app.get("/", (req, res) => {
         res.send("<h1>Your student managament database is ready now</h1>")
 })

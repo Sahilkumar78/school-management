@@ -16,5 +16,5 @@ const studenClassSchema = new mongoose.Schema({
 
 const StudentClass = mongoose.model("StudentClass", studenClassSchema);
 
-export {studenClass};
+export {StudentClass};
 

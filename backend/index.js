@@ -19,6 +19,8 @@ app.get("/", (req, res) => {
 connectDB()
 .then(() => {
      app.listen(process.env.PORT || 8080, () => {
+           console.log(process.env.PORT);
+           
            console.log(`server is running at port: ${process.env.PORT}`);
            
      })
@@ -27,3 +29,5 @@ connectDB()
       console.log("mongoDB connection failed!!", error);
       
 })
+
+// http://localhost:8080

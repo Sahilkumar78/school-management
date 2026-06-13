@@ -9,18 +9,19 @@ const studentSchema =new mongoose.Schema({
 
      rollNum:{
            type: String,
-           required: true 
+           required: true ,
+            unique: true
      },
 
      password:{
            type: String,
            required: true,
-           unique: true,
+         
      },
 
      sClass:{
            type: mongoose.Schema.Types.ObjectId,
-           ref: '',
+           ref: 'StudentClass',
            required: true
      },
 
@@ -75,3 +76,5 @@ const studentSchema =new mongoose.Schema({
 }, {timestamps: true})
 
 const Student = mongoose.model("Student", studentSchema);
+
+export {Student}

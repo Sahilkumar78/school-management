@@ -17,8 +17,8 @@ const studentRegister = asyncHandler(async (req, res) => {
 
     const existingStudent = await Student.find({rollNum})
 
-    if(existingStudent){
-         throw new ApiError(409, "student already exists");
+    if(existingStudent){ 
+        throw new ApiError(409, "student already exists");
     }
 
     const hasedPassword = await bcrypt.hash(password, 10);
@@ -97,49 +97,193 @@ const studentLogin = asyncHandler(async (req, res) => {
 
 // get all students
 
-const getStudents= asyncHandler(async(req, res) => {
-         const {schoolId} = req.params;
+const getStudents = asyncHandler(async (req, res) => {
+     
+       const {id} = req.params;
+     const students = await Student.find({
+            school: id
+     })
+     .populate(
+        "sClass", 
+        "studentClassName"
+     )
+     .select("-password");
 
-       const students = await Student.find({
-            school: schoolId
-         })
-         .populate("sClass")
-         .populate("school")
+     if(students.length ===0){
+          throw new ApiError(404, "students not found");
+     }
 
-         return res
-                .status(200)
-                .json(new ApiResponse(200, students, "Students fetched successfully"));
+     return res 
+           .status(200)
+           .json(new ApiResponse(200, {students}, "Students fetched succesfully"));
 
 })
 
-// get student details
 
 const getStudentDetails = asyncHandler(async (req, res) => {
+      
+         const {id} = req.params;
          
-          const {id} = req.params;
-
-        const student = await Student.findById(id)
-        .populate("sClass")
-        .populate("school")
-        .populate("attendance.subName")
-        .populate("examResult.subName");
+         const student = await Student.findById(id)
+         .populate("school", "schoolName")
+         .populate("sClass", "StudentClass")
+         .populate("examResult.subName", "subName")
+         .populate("attendance.subName", "subName sessions")
+         .select("-password");
 
          if(!student){
-             throw new ApiError(404, "Student not found");
-         }              
-        
-         student.password = undefined;
+             throw new ApiError(404, "student not found");
+         }
 
          return res 
                 .status(200)
-                .json(new ApiResponse(200, student, "Student fetched Successfully"));
-          
+                .json(new ApiResponse(200, student, "student details fetched successfully"));
 })
+
+
+const deleteStudent = asyncHandler(async (req, res) => {
+       
+         const {id} = req.params;
+         const deleteStudent = await Student.findByIdAndDelete(id);
+
+         if(!deleteStudent){
+              throw new ApiError(404, "Student not found");
+         }
+
+
+         return res
+                .status(200)
+                .json(new ApiResponse(200, deleteStudent, "Student deleted successfully"));
+})
+
+const updateStudent = asyncHandler(async (req, res) => {
+          const {id} = req.params;
+          const {name, rollNum, password,  sClass}  =req.body;
+
+          let hashedPassword;
+
+          if(password){
+              const salt = await bcrypt.genSalt(10);
+               hashedPassword = await bcrypt.hash(password, salt);
+          }
+
+          const student = await Student.findByIdAndUpdate(
+            id, 
+            {
+                $set: {
+                     name: name,
+                     rollNum: rollNum,
+                     sClass: sClass,
+                     ...(hashedPassword && {
+                         password: hashedPassword
+                     })
+                }
+            },
+            {
+                new: true
+            }
+          )
+          .select("-password");
+
+          if(!student){
+             throw new ApiError(404, "Student not found");
+          }
+
+
+          return res 
+                 .status(200)
+                 .json(new ApiResponse(200, student, "Student updated successfully"));
+         
+})
+
+const deleteStudents = asyncHandler(async (req, res) => {
+              const {id} = req.params;
+
+              const deletedStudents = await Student.deleteMany({
+                 school: id
+              })
+
+            if(deletedStudents.deletedCount ===0){
+                  throw new ApiError(404, "no students found");
+            }
+
+            return res 
+                    .status(200)
+                    .json(new ApiResponse(200, deletedStudents, "Students deleted successfully"));
+
+})
+
+
+const deleteStudentsByClass = asyncHandler(async (req, res) => {
+          const {id} = req.params;
+
+          const deletedStudentByClass = await Student.deleteMany(
+            {sClass: id}
+          );
+
+          if(deletedStudentByClass.deletedCount ===0){
+                 throw new ApiError(404, "students not found");
+          }
+
+          return res 
+                 .status(200)
+                 .json(new ApiResponse(200, deleteStudentsByClass, "students deleted successfully"));
+})
+
+
+const updateExamResult = asyncHandler(async (req, res) => {
+        
+         const {subName, marksObtained} = req.body;
+         const {id} = req.params;
+
+          const student = await Student.findById(id);
+
+          if(!student){
+             throw new ApiError(404, "student not found");
+          }
+
+          const updatedExamResult = await Student.find(
+             item => item.subName.toString() === subName
+          );
+
+          if(updateExamResult){
+               updateExamResult.marksObtained = marksObtained;
+          }
+
+          else{
+              student.examResult.push({
+                 subName, marksObtained
+              })
+          }
+        
+          await Student.save();
+
+          return res
+                 .status(200)
+                 .json(new ApiResponse(200, updateExamResult, "Student marks updated"));
+
+})
+
+//student attendance
+
+// clearallstudents attendance by subject
+
+//clear all students attendance 
+
+// remove student attendance by subject
+
+// remove student attendance
+
 
 
 export {
      studentRegister,
      studentLogin,
      getStudents,
-     getStudentDetails
+     getStudentDetails,
+     deleteStudent,
+     updateStudent,
+     deleteStudents,
+     deleteStudentsByClass,
+     updateExamResult,
 }

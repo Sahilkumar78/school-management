@@ -57,7 +57,7 @@ const studentSchema =new mongoose.Schema({
                      type: Date,
                      required: true
                },
-
+               
                status:{
                      type: String,
                      enum: ["present", "absent"],

@@ -265,14 +265,140 @@ const updateExamResult = asyncHandler(async (req, res) => {
 })
 
 //student attendance
+// important controller    
+
+const studentAttendance = asyncHandler(async (req, res) => {
+        
+       const {id} = req.params;
+
+       const {date, status, subName} = req.body;
+
+       
+       const student = await Student.findById(id);
+
+       if(!student){
+           throw new ApiError(404, "Student not found");
+       }
+
+       const subject = await Subject.findById(subName);
+
+       if(!subject){
+         throw new ApiError(404 , "Subject not found");
+       }
+
+       const totalAttendance = student.attendance.filter(
+
+        item => item.subName.toString() === subName
+       ).length;
+
+       if(totalAttendance >=  subName.sessions){
+           throw new ApiError(400, "Maximum attendance reached")
+       }
+
+       student.attendance.push({
+           date,
+           status,
+           subName,
+       })
+
+       await student.save();
+
+
+       return res 
+              .status(200)
+              .json(new ApiResponse(200, student, "Attendance updated"));
+
+})
 
 // clearallstudents attendance by subject
+  
+const clearAllStudentsAttendanceBySubject = asyncHandler(async (req, res) => {
+       
+       const {id} = req.params;
+
+       const student = await Student.updateMany({
+             "attendance.subName": id
+       },{
+       $pull:{
+         attendance: {
+             subName: id
+         }
+       }
+       }
+    )
+    
+      return res 
+            .status(200)
+            .json(new ApiResponse(200, student, "Attendance cleared"));
+
+})
 
 //clear all students attendance 
+  const clearAllStudentsAttendance = asyncHandler(async (req, res) => {
+          const {id} = req.params;
+
+          const clearedStudentsAttendance = await Student.updateMany({
+               school: id
+          },
+          {
+             $set: {
+                  attendance: []
+             }
+          }
+        )
+
+        return res 
+              .status(200)
+              .json(new ApiResponse(200, clearAllStudentsAttendance, "Attendance cleared"));
+  })
+
 
 // remove student attendance by subject
 
+const removeStudentAttendanceBySubject = asyncHandler(async (req, res) => {
+      
+         const {id} = req.params;
+         const {subId} = req.body;
+
+         const result = await Student.updateOne({
+             _id: id
+         }, 
+         {
+             $pull:{
+                 subName: subId
+             }
+         }
+        
+        )
+
+
+
+        return res 
+              .status(200)
+              .json(new ApiResponse(200, result, "Attendance Removed"));
+})
+
 // remove student attendance
+
+const removeStudentAttendance = asyncHandler(async (req, res) => {
+        
+             const {id} = req.params;
+
+             const result = await Student.updateOne({
+                 _id: id,
+             },
+             {
+                 $set: {
+                       attendance: []
+                 }
+             }
+            )
+
+
+            return res 
+                  .status(200)
+                  .json(new ApiResponse(200, result, "Attendance Removed"));
+})
 
 
 
@@ -286,4 +412,8 @@ export {
      deleteStudents,
      deleteStudentsByClass,
      updateExamResult,
+     deleteStudentsByClass,
+     clearAllStudentsAttendance,
+     removeStudentAttendanceBySubject,
+     removeStudentAttendance,
 }
